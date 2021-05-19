@@ -94,3 +94,7 @@ local.properties
 # ==================
 
 !modules/mod-TimeIsTime
+src/server/.vs
+src/server/out/build
+modules/mod-TimeIsTime/.vs
+modules/mod-TimeIsTime/out

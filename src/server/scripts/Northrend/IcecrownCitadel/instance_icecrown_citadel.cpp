@@ -595,12 +595,6 @@ public:
                             return;
 
                         FrostwyrmGUIDs.erase(creature->GetSpawnId());
-                        if (FrostwyrmGUIDs.empty())
-                        {
-                            instance->LoadGrid(SindragosaSpawnPos.GetPositionX(), SindragosaSpawnPos.GetPositionY());
-                            if (Creature* boss = instance->SummonCreature(NPC_SINDRAGOSA, SindragosaSpawnPos))
-                                boss->AI()->DoAction(ACTION_START_FROSTWYRM);
-                        }
                         break;
                     }
                 case NPC_DEATHSPEAKER_SERVANT:
@@ -1767,24 +1761,6 @@ public:
                     }
                     break;
                 case EVENT_TELEPORT_TO_FROSMOURNE: // Harvest Soul (normal mode)
-                    if (Creature* terenas = instance->SummonCreature(NPC_TERENAS_MENETHIL_FROSTMOURNE, TerenasSpawn, nullptr, 65000))
-                    {
-                        terenas->AI()->DoAction(ACTION_FROSTMOURNE_INTRO);
-                        std::list<Creature*> triggers;
-                        GetCreatureListWithEntryInGrid(triggers, terenas, NPC_WORLD_TRIGGER_INFINITE_AOI, 100.0f);
-                        if (!triggers.empty())
-                        {
-                            triggers.sort(acore::ObjectDistanceOrderPred(terenas, false));
-                            Unit* visual = triggers.front();
-                            visual->CastSpell(visual, SPELL_FROSTMOURNE_TELEPORT_VISUAL, true);
-                        }
-
-                        if (Creature* warden = instance->SummonCreature(NPC_SPIRIT_WARDEN, SpiritWardenSpawn, nullptr, 65000))
-                        {
-                            terenas->AI()->AttackStart(warden);
-                            warden->AddThreat(terenas, 300000.0f);
-                        }
-                    }
                     break;
                 case EVENT_FESTERGUT_VALVE_USED:
                     if (!(PutricideEventProgress & PUTRICIDE_EVENT_FLAG_FESTERGUT_VALVE))
