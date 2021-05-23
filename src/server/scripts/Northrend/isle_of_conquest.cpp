@@ -205,92 +205,6 @@ enum BossIoCSpells
     SPELL_IOCBOSS_RAGE              = 66776,
 };
 
-class boss_isle_of_conquest : public CreatureScript
-{
-public:
-    boss_isle_of_conquest() : CreatureScript("boss_isle_of_conquest") {}
-
-    struct boss_isle_of_conquestAI : public ScriptedAI
-    {
-        boss_isle_of_conquestAI(Creature* creature) : ScriptedAI(creature) { }
-
-        EventMap events;
-        bool rage;
-        void Reset() override
-        {
-            events.Reset();
-            rage = false;
-        }
-
-        void CheckRageBuff()
-        {
-            if (!rage)
-            {
-                if (me->GetDistance(me->GetHomePosition()) > 40.0f)
-                {
-                    rage = true;
-                    me->CastSpell(me, SPELL_IOCBOSS_RAGE, true);
-                }
-            }
-            else
-            {
-                if (me->GetDistance(me->GetHomePosition()) < 40.0f && abs(me->GetPositionZ() - me->GetHomePosition().GetPositionZ()) < 5.0f)
-                {
-                    rage = false;
-                    me->RemoveAurasDueToSpell(SPELL_IOCBOSS_RAGE);
-                }
-            }
-        }
-
-        void EnterCombat(Unit*  /*who*/) override
-        {
-            events.ScheduleEvent(EVENT_CHECK_RAGE, 2000);
-            events.ScheduleEvent(EVENT_BRUTAL_STRIKE, 6000);
-            events.ScheduleEvent(EVENT_CRUSHING_LEAP, 22000);
-            events.ScheduleEvent(EVENT_DAGGER_THROW, 10000);
-        }
-
-        void UpdateAI(uint32 diff) override
-        {
-            if (!UpdateVictim())
-                return;
-
-            events.Update(diff);
-            if (me->HasUnitState(UNIT_STATE_CASTING))
-                return;
-
-            switch (events.ExecuteEvent())
-            {
-                case EVENT_CHECK_RAGE:
-                    CheckRageBuff();
-                    events.RepeatEvent(2000);
-                    break;
-                case EVENT_BRUTAL_STRIKE:
-                    me->CastSpell(me->GetVictim(), SPELL_IOCBOSS_BRUTAL_STRIKE, false);
-                    events.RepeatEvent(6000);
-                    break;
-                case EVENT_CRUSHING_LEAP:
-                    me->CastSpell(me, SPELL_IOCBOSS_CRUSHING_LEAP, false);
-                    events.RepeatEvent(22000);
-                    break;
-                case EVENT_DAGGER_THROW:
-                    if (Unit* tgt = SelectTarget(SELECT_TARGET_RANDOM))
-                        me->CastSpell(tgt, SPELL_IOCBOSS_DAGGER_THROW, false);
-
-                    events.RepeatEvent(10000);
-                    break;
-            }
-
-            DoMeleeAttackIfReady();
-        }
-    };
-
-    CreatureAI* GetAI(Creature* creature) const override
-    {
-        return new boss_isle_of_conquestAI(creature);
-    }
-};
-
 class spell_ioc_repair_turret : public SpellScriptLoader
 {
 public:
@@ -491,7 +405,6 @@ void AddSC_isle_of_conquest()
     new npc_isle_of_conquest_turret();
     new npc_four_car_garage();
     new npc_ioc_gunship_captain();
-    new boss_isle_of_conquest();
     new spell_ioc_repair_turret();
     new spell_ioc_bomb_blast_criteria();
     new spell_ioc_gunship_portal();

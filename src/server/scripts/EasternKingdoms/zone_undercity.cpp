@@ -2149,73 +2149,6 @@ public:
 };
 
 /*######
-## ENEMY
-#######*/
-
-/*######
-## boss_blight_worm
-######*/
-
-class boss_blight_worm : public CreatureScript
-{
-public:
-    boss_blight_worm() : CreatureScript("boss_blight_worm") { }
-
-    struct boss_blight_wormAI : public ScriptedAI
-    {
-        boss_blight_wormAI(Creature* creature) : ScriptedAI(creature)
-        {
-            SetCombatMovement(false);
-        }
-
-        void Reset() override
-        {
-            _events.ScheduleEvent(EVENT_INFEST, 2 * IN_MILLISECONDS);
-            _events.ScheduleEvent(EVENT_BLIGHT_BREATH, 7.5 * IN_MILLISECONDS);
-        }
-
-        void UpdateAI(uint32 diff) override
-        {
-            if (!UpdateVictim())
-                return;
-
-            _events.Update(diff);
-
-            if (me->HasUnitState(UNIT_STATE_CASTING))
-                return;
-
-            while (uint32 eventId = _events.ExecuteEvent())
-            {
-                switch (eventId)
-                {
-                    case EVENT_INFEST:
-                        if (Unit* target = SelectTarget(SELECT_TARGET_RANDOM, 0, 0, true))
-                            DoCast(target, SPELL_INGEST);
-                        _events.ScheduleEvent(EVENT_INFEST, 20 * IN_MILLISECONDS);
-                        break;
-                    case EVENT_BLIGHT_BREATH:
-                        DoCast(SPELL_BLIGHT_BREATH);
-                        _events.ScheduleEvent(EVENT_BLIGHT_BREATH, 15 * IN_MILLISECONDS);
-                        break;
-                    default:
-                        break;
-                }
-            }
-
-            DoMeleeAttackIfReady();
-        }
-
-    private:
-        EventMap _events;
-    };
-
-    CreatureAI* GetAI(Creature* creature) const override
-    {
-        return new boss_blight_wormAI(creature);
-    }
-};
-
-/*######
 ## Spells
 ######*/
 
@@ -4082,6 +4015,5 @@ void AddSC_undercity()
     new npc_thrall_bfu();
     new npc_jaina_proudmoore_bfu();
     new npc_lady_sylvanas_windrunner_bfu();
-    new boss_blight_worm();
     new spell_blight_worm_ingest();
 }

@@ -891,101 +891,6 @@ public:
     };
 };
 
-class npc_shadowy_mercenary : public CreatureScript
-{
-public:
-    npc_shadowy_mercenary() : CreatureScript("npc_shadowy_mercenary") { }
-
-    CreatureAI* GetAI(Creature* creature) const override
-    {
-        return GetHallsOfReflectionAI<npc_shadowy_mercenaryAI>(creature);
-    }
-
-    struct npc_shadowy_mercenaryAI: public ScriptedAI
-    {
-        npc_shadowy_mercenaryAI(Creature* c) : ScriptedAI(c) {}
-
-        EventMap events;
-
-        void DoAction(int32 a) override
-        {
-            if (a == 1)
-            {
-                me->SetInCombatWithZone();
-                if (Unit* target = SelectTarget(SELECT_TARGET_NEAREST, 0, 0.0f, true))
-                    AttackStart(target);
-            }
-        }
-
-        void Reset() override
-        {
-            events.Reset();
-        }
-
-        void EnterCombat(Unit* /*who*/) override
-        {
-            events.ScheduleEvent(EVENT_SHADOW_STEP, 4000);
-            events.ScheduleEvent(EVENT_DEADLY_POISON, 6000);
-            events.ScheduleEvent(EVENT_ENVENOMED_DAGGER_THROW, 10000);
-            events.ScheduleEvent(EVENT_KIDNEY_SHOT, 5000);
-        }
-
-        void AttackStart(Unit* who) override
-        {
-            if (!me->IsVisible() || me->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE))
-                return;
-            ScriptedAI::AttackStart(who);
-        }
-
-        void UpdateAI(uint32 diff) override
-        {
-            if (!UpdateVictim())
-                return;
-
-            events.Update(diff);
-
-            if (me->HasUnitState(UNIT_STATE_CASTING) || me->isFeared() || me->IsCharmed() || me->isFrozen() || me->HasUnitState(UNIT_STATE_STUNNED) || me->HasUnitState(UNIT_STATE_CONFUSED))
-                return;
-
-            switch (events.ExecuteEvent())
-            {
-                case EVENT_SHADOW_STEP:
-                    if (Unit* target = SelectTargetFromPlayerList(100.0f, 0, true))
-                    {
-                        DoResetThreat();
-                        me->AddThreat(target, 5000.0f);
-                        AttackStart(target);
-                        me->CastSpell(target, SPELL_SHADOW_STEP, false);
-                    }
-                    events.ScheduleEvent(EVENT_SHADOW_STEP, 20000);
-                    break;
-                case EVENT_DEADLY_POISON:
-                    me->CastSpell(me->GetVictim(), SPELL_DEADLY_POISON, false);
-                    events.ScheduleEvent(EVENT_DEADLY_POISON, 4000);
-                    break;
-                case EVENT_ENVENOMED_DAGGER_THROW:
-                    if (Unit* target = SelectTargetFromPlayerList(40.0f, 0, true))
-                        me->CastSpell(target, SPELL_ENVENOMED_DAGGER_THROW, false);
-                    events.ScheduleEvent(EVENT_ENVENOMED_DAGGER_THROW, 10000);
-                    break;
-                case EVENT_KIDNEY_SHOT:
-                    me->CastSpell(me->GetVictim(), SPELL_KIDNEY_SHOT, false);
-                    events.ScheduleEvent(EVENT_KIDNEY_SHOT, 10000);
-                    break;
-            }
-
-            DoMeleeAttackIfReady();
-        }
-
-        void EnterEvadeMode() override
-        {
-            ScriptedAI::EnterEvadeMode();
-            if (me->GetInstanceScript()->GetData(DATA_WAVE_NUMBER))
-                me->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_IMMUNE_TO_PC | UNIT_FLAG_IMMUNE_TO_NPC | UNIT_FLAG_NOT_SELECTABLE);
-        }
-    };
-};
-
 class npc_spectral_footman : public CreatureScript
 {
 public:
@@ -1151,87 +1056,6 @@ public:
                 me->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_IMMUNE_TO_PC | UNIT_FLAG_IMMUNE_TO_NPC | UNIT_FLAG_NOT_SELECTABLE);
         }
     };
-};
-
-class boss_frostsworn_general : public CreatureScript
-{
-public:
-    boss_frostsworn_general() : CreatureScript("boss_frostsworn_general") { }
-
-    struct boss_frostsworn_generalAI : public ScriptedAI
-    {
-        boss_frostsworn_generalAI(Creature* creature) : ScriptedAI(creature)
-        {
-            pInstance = creature->GetInstanceScript();
-        }
-
-        InstanceScript* pInstance;
-        EventMap events;
-
-        void Reset() override
-        {
-            events.Reset();
-        }
-
-        void EnterCombat(Unit* /*who*/) override
-        {
-            Talk(SAY_FROSTSWORN_GENERAL_AGGRO);
-            events.ScheduleEvent(EVENT_ACTIVATE_REFLECTIONS, 8000);
-            events.ScheduleEvent(EVENT_THROW_SHIELD, 6000);
-            pInstance->SetData(ACTION_SPIRITUAL_REFLECTIONS_COPY, 1);
-        }
-
-        void UpdateAI(uint32 diff) override
-        {
-            if (!UpdateVictim())
-                return;
-
-            Position p = me->GetHomePosition();
-            if (me->GetExactDist(&p) > 30.0f)
-            {
-                EnterEvadeMode();
-                return;
-            }
-
-            events.Update(diff);
-
-            if (me->HasUnitState(UNIT_STATE_CASTING))
-                return;
-
-            switch (events.ExecuteEvent())
-            {
-                case EVENT_ACTIVATE_REFLECTIONS:
-                    me->CastSpell((Unit*)nullptr, SPELL_SUMMON_REFLECTIONS_DUMMY, false);
-                    pInstance->SetData(ACTION_SPIRITUAL_REFLECTIONS_ACTIVATE, 1);
-                    break;
-                case EVENT_THROW_SHIELD:
-                    if (Unit* target = SelectTargetFromPlayerList(40.0f, 0, true))
-                        me->CastSpell(target, SPELL_THROW_SHIELD, false);
-                    events.ScheduleEvent(EVENT_THROW_SHIELD, 10000);
-                    break;
-            }
-
-            DoMeleeAttackIfReady();
-        }
-
-        void JustDied(Unit* /*killer*/) override
-        {
-            Talk(SAY_FROSTSWORN_GENERAL_DEATH);
-            if (pInstance)
-                pInstance->SetData(DATA_FROSTSWORN_GENERAL, DONE);
-        }
-
-        void EnterEvadeMode() override
-        {
-            pInstance->SetData(ACTION_SPIRITUAL_REFLECTIONS_HIDE, 1);
-            ScriptedAI::EnterEvadeMode();
-        }
-    };
-
-    CreatureAI* GetAI(Creature* creature) const override
-    {
-        return GetHallsOfReflectionAI<boss_frostsworn_generalAI>(creature);
-    }
 };
 
 class npc_hor_spiritual_reflection : public CreatureScript
@@ -2049,11 +1873,9 @@ void AddSC_halls_of_reflection()
     new npc_ghostly_priest();
     new npc_phantom_mage();
     new npc_phantom_hallucination();
-    new npc_shadowy_mercenary();
     new npc_spectral_footman();
     new npc_tortured_rifleman();
 
-    new boss_frostsworn_general();
     new npc_hor_spiritual_reflection();
 
     new at_hor_shadow_throne();

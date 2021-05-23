@@ -1137,79 +1137,8 @@ public:
         }
     };
 };
-class boss_naxxramas_misc : public CreatureScript
-{
-public:
-    boss_naxxramas_misc() : CreatureScript("boss_naxxramas_misc") { }
-
-    CreatureAI* GetAI(Creature* pCreature) const override
-    {
-        return GetNaxxramasAI<boss_naxxramas_miscAI>(pCreature);
-    }
-
-    struct boss_naxxramas_miscAI : public NullCreatureAI
-    {
-        explicit boss_naxxramas_miscAI(Creature* c) : NullCreatureAI(c)
-        {
-            timer = 0;
-        }
-
-        uint32 timer;
-
-        void JustDied(Unit* ) override
-        {
-            if (me->GetEntry() == NPC_MR_BIGGLESWORTH && me->GetInstanceScript())
-            {
-                if (Creature* cr = me->SummonCreature(20350/*NPC_KELTHUZAD*/, *me, TEMPSUMMON_TIMED_DESPAWN, 1))
-                {
-                    cr->SetDisplayId(11686);
-                    cr->AI()->Talk(SAY_CAT_DIED);
-                }
-            }
-        }
-
-        void UpdateAI(uint32 diff) override
-        {
-            if (me->GetEntry() == NPC_NAXXRAMAS_TRIGGER)
-            {
-                timer += diff;
-                if (timer >= 5000)
-                {
-                    if (Creature* cr = me->SummonCreature(NPC_LIVING_POISON, 3128.59, -3118.81, 293.346, 4.76754, TEMPSUMMON_TIMED_DESPAWN, 15200))
-                    {
-                        cr->AddUnitMovementFlag(MOVEMENTFLAG_WALKING);
-                        cr->GetMotionMaster()->MovePoint(0, 3130.322, -3156.51, 293.324, false);
-                    }
-                    if (Creature* cr = me->SummonCreature(NPC_LIVING_POISON, *me, TEMPSUMMON_TIMED_DESPAWN, 14800))
-                    {
-                        cr->AddUnitMovementFlag(MOVEMENTFLAG_WALKING);
-                        cr->GetMotionMaster()->MovePoint(0, 3144.779, -3158.416, 293.324, false);
-                    }
-                    if (Creature* cr = me->SummonCreature(NPC_LIVING_POISON, 3175.42, -3134.86, 293.34, 4.284, TEMPSUMMON_TIMED_DESPAWN, 14800))
-                    {
-                        cr->AddUnitMovementFlag(MOVEMENTFLAG_WALKING);
-                        cr->GetMotionMaster()->MovePoint(0, 3158.778, -3164.201, 293.312, false);
-                    }
-                    timer = 0;
-                }
-            }
-            else if (me->GetEntry() == NPC_LIVING_POISON)
-            {
-                Unit* target = nullptr;
-                acore::AnyUnfriendlyUnitInObjectRangeCheck u_check(me, me, 0.5f);
-                acore::UnitLastSearcher<acore::AnyUnfriendlyUnitInObjectRangeCheck> searcher(me, target, u_check);
-                me->VisitNearbyObject(1.5f, searcher);
-                if (target)
-                {
-                    me->CastSpell(me, SPELL_FROGGER_EXPLODE, true);
-                }
-            }
-        }
-    };
-};
 
 void AddSC_instance_naxxramas()
 {
     new instance_naxxramas();
-    new boss_naxxramas_misc();
 }
